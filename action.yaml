@@ -1,0 +1,26 @@
+name: Increase App Version
+description: Increment the app version in app.json.
+
+inputs:
+
+  Build_StagingDirectory:
+    description: Path to the staging directory where app.json is located.
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Increment App Version
+      shell: pwsh
+      run: |
+
+
+        # Update the version
+        $app = (Get-Content "app.json" -Encoding UTF8 | ConvertFrom-Json)
+        $existingVersion = $app.version -as [version]
+        $versionBuild = Get-Date -Format "yyyyMMdd"
+        $versionRevision = Get-Date -Format "HHmmss"
+        $nextVersion = [version]::new($existingVersion.Major, $existingVersion.Minor, $versionBuild, $versionRevision)
+        $app.version = "$nextVersion"
+        $app | ConvertTo-Json | Set-Content app.json
+        Write-Host "##[section]Version increased to $nextVersion"

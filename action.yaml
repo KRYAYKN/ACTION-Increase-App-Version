@@ -1,27 +1,37 @@
 name: Increase App Version
-description: Increment the app version in app.json.
+description: Increment the app version in app.json files (main and test apps).
 
 inputs:
   Build_StagingDirectory:
-    description: Path to the staging directory where app.json is located.
+    description: Path to the staging directory where app.json files are located.
     required: true
 
 runs:
   using: "composite"
   steps:
-    - name: Increment App Version
+    - name: Increment App Versions
       shell: pwsh
       run: |
+        function Update-AppJsonVersion {
+            param (
+                [string]$AppJsonPath
+            )
+
+            if (Test-Path $AppJsonPath) {
+                $app = Get-Content $AppJsonPath -Encoding UTF8 | ConvertFrom-Json
+                $existingVersion = $app.version -as [version]
+                $versionBuild = Get-Date -Format "yyyyMMdd"
+                $versionRevision = Get-Date -Format "HHmmss"
+                $nextVersion = [version]::new($existingVersion.Major, $existingVersion.Minor, $versionBuild, $versionRevision)
+                $app.version = "$nextVersion"
+
+                $app | ConvertTo-Json -Depth 100 | Set-Content $AppJsonPath -Encoding UTF8
+                Write-Host "✅ Updated version in $AppJsonPath to $nextVersion"
+            } else {
+                Write-Host "⚠️ app.json not found at: $AppJsonPath"
+            }
+        }
+
         $RepoDir = Get-Location
-        $appJsonPath = Join-Path $RepoDir "src/PageExt/app.json"
-
-        # Update the version
-        $app = (Get-Content $appJsonPath -Encoding UTF8 | ConvertFrom-Json)
-        $existingVersion = $app.version -as [version]
-        $versionBuild = Get-Date -Format "yyyyMMdd"
-        $versionRevision = Get-Date -Format "HHmmss"
-        $nextVersion = [version]::new($existingVersion.Major, $existingVersion.Minor, $versionBuild, $versionRevision)
-        $app.version = "$nextVersion"
-
-        $app | ConvertTo-Json -Depth 100 | Set-Content $appJsonPath -Encoding UTF8
-        Write-Host "##[section]Version increased to $nextVersion"
+        Update-AppJsonVersion "$RepoDir/src/PageExt/app.json"
+        Update-AppJsonVersion "$RepoDir/src/Test/app.json"

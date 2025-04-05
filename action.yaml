@@ -69,7 +69,7 @@ runs:
         Update-AppJsonVersion $testAppPath
 
         # Test app dependency versiyonunu güncelle
-        # (ID'yi senin app.json'dan aldım ama istersen sadece name/publisher check'i ile de yapabilirsin)
+  
         Update-TestAppDependencyVersion `
             -AppJsonPath $testAppPath `
             -mainAppId "ab48383d-1c96-45ad-99cb-4181188821f9" `

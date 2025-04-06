@@ -47,7 +47,7 @@ runs:
                 $testApp = Get-Content $AppJsonPath -Encoding UTF8 | ConvertFrom-Json
                 foreach ($dep in $testApp.dependencies) {
                     if ($dep.id -eq $mainAppId -or ($dep.name -eq $mainAppName -and $dep.publisher -eq $mainAppPublisher)) {
-                        $dep.version = "[$mainAppVersion,)"
+                        $dep.version = "$mainAppVersion"
                         Write-Host "🔁 Updated dependency version to [$mainAppVersion,) in test app"
                     }
                 }

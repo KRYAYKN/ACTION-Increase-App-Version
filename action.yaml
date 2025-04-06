@@ -48,7 +48,7 @@ runs:
                 $testApp = Get-Content $AppJsonPath -Encoding UTF8 | ConvertFrom-Json
                 foreach ($dep in $testApp.dependencies) {
                     if ($dep.id -eq $mainAppId -or ($dep.name -eq $mainAppName -and $dep.publisher -eq $mainAppPublisher)) {
-                        $dep.version = "$mainAppVersion"
+                        $dep.version = "[$mainAppVersion,)"
                         Write-Host "🔁 Updated dependency version to [$mainAppVersion,) in test app"
                     }
                 }
@@ -62,22 +62,22 @@ runs:
         function Update-TestAppMicrosoftDependencies {
             param (
                 [string]$AppJsonPath,
-                [string]$containerName
+                [string]$environmentName
             )
 
             if (Test-Path $AppJsonPath) {
                 $testApp = Get-Content $AppJsonPath -Encoding UTF8 | ConvertFrom-Json
 
-                $testRunner = Get-BcContainerAppInfo -containerName $containerName | Where-Object { $_.Name -eq "Test Runner" -and $_.Publisher -eq "Microsoft" }
-                $assert = Get-BcContainerAppInfo -containerName $containerName | Where-Object { $_.Name -eq "Library Assert" -and $_.Publisher -eq "Microsoft" }
+                $testRunner = Get-BcPublishedAppInfo -environmentName $environmentName | Where-Object { $_.Name -eq "Test Runner" -and $_.Publisher -eq "Microsoft" }
+                $assert = Get-BcPublishedAppInfo -environmentName $environmentName | Where-Object { $_.Name -eq "Library Assert" -and $_.Publisher -eq "Microsoft" }
 
                 foreach ($dep in $testApp.dependencies) {
                     if ($dep.name -eq "Test Runner" -and $dep.publisher -eq "Microsoft") {
-                        $dep.version = $testRunner.Version.ToString()
+                        $dep.version = "[$($testRunner.Version.ToString()),)"
                         Write-Host "🧪 Updated Test Runner version to $($dep.version)"
                     }
                     elseif ($dep.name -eq "Library Assert" -and $dep.publisher -eq "Microsoft") {
-                        $dep.version = $assert.Version.ToString()
+                        $dep.version = "[$($assert.Version.ToString()),)"
                         Write-Host "🧪 Updated Library Assert version to $($dep.version)"
                     }
                 }
@@ -107,6 +107,5 @@ runs:
             -mainAppVersion $mainAppVersion
 
         # Test Runner ve Library Assert versiyonlarını güncelle
-        $containerName = "BUSINESSCENTRAL-FORMULA-ERP-CONTAINER"
-        Update-TestAppMicrosoftDependencies -AppJsonPath $testAppPath -containerName $containerName
-#SS
+        $environmentName = "LocalizationSandbox"
+        Update-TestAppMicrosoftDependencies -AppJsonPath $testAppPath -environmentName $environmentName

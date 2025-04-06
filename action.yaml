@@ -1,4 +1,5 @@
 name: Increase App Version
+
 description: Increment the app version in app.json files (main and test apps).
 
 inputs:
@@ -58,6 +59,35 @@ runs:
             }
         }
 
+        function Update-TestAppMicrosoftDependencies {
+            param (
+                [string]$AppJsonPath,
+                [string]$containerName
+            )
+
+            if (Test-Path $AppJsonPath) {
+                $testApp = Get-Content $AppJsonPath -Encoding UTF8 | ConvertFrom-Json
+
+                $testRunner = Get-BcContainerAppInfo -containerName $containerName | Where-Object { $_.Name -eq "Test Runner" -and $_.Publisher -eq "Microsoft" }
+                $assert = Get-BcContainerAppInfo -containerName $containerName | Where-Object { $_.Name -eq "Library Assert" -and $_.Publisher -eq "Microsoft" }
+
+                foreach ($dep in $testApp.dependencies) {
+                    if ($dep.name -eq "Test Runner" -and $dep.publisher -eq "Microsoft") {
+                        $dep.version = $testRunner.Version.ToString()
+                        Write-Host "🧪 Updated Test Runner version to $($dep.version)"
+                    }
+                    elseif ($dep.name -eq "Library Assert" -and $dep.publisher -eq "Microsoft") {
+                        $dep.version = $assert.Version.ToString()
+                        Write-Host "🧪 Updated Library Assert version to $($dep.version)"
+                    }
+                }
+
+                $testApp | ConvertTo-Json -Depth 100 | Set-Content $AppJsonPath -Encoding UTF8
+            } else {
+                Write-Host "⚠️ Test app.json not found at: $AppJsonPath"
+            }
+        }
+
         $RepoDir = Get-Location
 
         # Main app versiyonunu güncelle ve sakla
@@ -68,11 +98,14 @@ runs:
         $testAppPath = "$RepoDir/src/Test/app.json"
         Update-AppJsonVersion $testAppPath
 
-        # Test app dependency versiyonunu güncelle
-  
+        # Test app dependency versiyonlarını güncelle
         Update-TestAppDependencyVersion `
             -AppJsonPath $testAppPath `
             -mainAppId "ab48383d-1c96-45ad-99cb-4181188821f9" `
             -mainAppPublisher "pargesoft" `
             -mainAppName "Saint-gobain" `
             -mainAppVersion $mainAppVersion
+
+        # Test Runner ve Library Assert versiyonlarını güncelle
+        $containerName = "BUSINESSCENTRAL-FORMULA-ERP-CONTAINER"
+        Update-TestAppMicrosoftDependencies -AppJsonPath $testAppPath -containerName $containerName

@@ -1,5 +1,4 @@
 name: Increase App Version
-
 description: Increment the app version in app.json files (main and test apps).
 
 inputs:
@@ -48,37 +47,8 @@ runs:
                 $testApp = Get-Content $AppJsonPath -Encoding UTF8 | ConvertFrom-Json
                 foreach ($dep in $testApp.dependencies) {
                     if ($dep.id -eq $mainAppId -or ($dep.name -eq $mainAppName -and $dep.publisher -eq $mainAppPublisher)) {
-                        $dep.version = "[$mainAppVersion,)"
+                        $dep.version = "$mainAppVersion"
                         Write-Host "🔁 Updated dependency version to [$mainAppVersion,) in test app"
-                    }
-                }
-
-                $testApp | ConvertTo-Json -Depth 100 | Set-Content $AppJsonPath -Encoding UTF8
-            } else {
-                Write-Host "⚠️ Test app.json not found at: $AppJsonPath"
-            }
-        }
-
-        function Update-TestAppMicrosoftDependencies {
-            param (
-                [string]$AppJsonPath,
-                [string]$environmentName
-            )
-
-            if (Test-Path $AppJsonPath) {
-                $testApp = Get-Content $AppJsonPath -Encoding UTF8 | ConvertFrom-Json
-
-                $testRunner = Get-BcPublishedAppInfo -environmentName $environmentName | Where-Object { $_.Name -eq "Test Runner" -and $_.Publisher -eq "Microsoft" }
-                $assert = Get-BcPublishedAppInfo -environmentName $environmentName | Where-Object { $_.Name -eq "Library Assert" -and $_.Publisher -eq "Microsoft" }
-
-                foreach ($dep in $testApp.dependencies) {
-                    if ($dep.name -eq "Test Runner" -and $dep.publisher -eq "Microsoft") {
-                        $dep.version = "[$($testRunner.Version.ToString()),)"
-                        Write-Host "🧪 Updated Test Runner version to $($dep.version)"
-                    }
-                    elseif ($dep.name -eq "Library Assert" -and $dep.publisher -eq "Microsoft") {
-                        $dep.version = "[$($assert.Version.ToString()),)"
-                        Write-Host "🧪 Updated Library Assert version to $($dep.version)"
                     }
                 }
 
@@ -98,14 +68,11 @@ runs:
         $testAppPath = "$RepoDir/src/Test/app.json"
         Update-AppJsonVersion $testAppPath
 
-        # Test app dependency versiyonlarını güncelle
+        # Test app dependency versiyonunu güncelle
+  
         Update-TestAppDependencyVersion `
             -AppJsonPath $testAppPath `
             -mainAppId "ab48383d-1c96-45ad-99cb-4181188821f9" `
             -mainAppPublisher "pargesoft" `
             -mainAppName "Saint-gobain" `
             -mainAppVersion $mainAppVersion
-
-        # Test Runner ve Library Assert versiyonlarını güncelle
-        $environmentName = "LocalizationSandbox"
-        Update-TestAppMicrosoftDependencies -AppJsonPath $testAppPath -environmentName $environmentName

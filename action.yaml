@@ -1,15 +1,15 @@
 name: Increase App Version
-description: Increment the app version in app.json files (main and test apps).
+description: Increment the app version in app.json file (single app only).
 
 inputs:
   Build_StagingDirectory:
-    description: Path to the staging directory where app.json files are located.
+    description: Path to the staging directory where app.json is located.
     required: true
 
 runs:
   using: "composite"
   steps:
-    - name: Increment App Versions
+    - name: Increment App Version
       shell: pwsh
       run: |
         function Update-AppJsonVersion {
@@ -27,52 +27,13 @@ runs:
 
                 $app | ConvertTo-Json -Depth 100 | Set-Content $AppJsonPath -Encoding UTF8
                 Write-Host "✅ Updated version in $AppJsonPath to $nextVersion"
-                return $nextVersion
-            } else {
-                Write-Host "⚠️ app.json not found at: $AppJsonPath"
-                return $null
             }
-        }
-
-        function Update-TestAppDependencyVersion {
-            param (
-                [string]$AppJsonPath,
-                [string]$mainAppId,
-                [string]$mainAppPublisher,
-                [string]$mainAppName,
-                [string]$mainAppVersion
-            )
-
-            if (Test-Path $AppJsonPath) {
-                $testApp = Get-Content $AppJsonPath -Encoding UTF8 | ConvertFrom-Json
-                foreach ($dep in $testApp.dependencies) {
-                    if ($dep.id -eq $mainAppId -or ($dep.name -eq $mainAppName -and $dep.publisher -eq $mainAppPublisher)) {
-                        $dep.version = "$mainAppVersion"
-                        Write-Host "🔁 Updated dependency version to [$mainAppVersion,) in test app"
-                    }
-                }
-
-                $testApp | ConvertTo-Json -Depth 100 | Set-Content $AppJsonPath -Encoding UTF8
-            } else {
-                Write-Host "⚠️ Test app.json not found at: $AppJsonPath"
+            else {
+                Write-Error "❌ app.json not found at: $AppJsonPath"
+                exit 1
             }
         }
 
         $RepoDir = Get-Location
-
-        # Main app versiyonunu güncelle ve sakla
-        $mainAppPath = "$RepoDir/src/PageExt/app.json"
-        $mainAppVersion = Update-AppJsonVersion $mainAppPath
-
-        # Test app versiyonunu güncelle
-        $testAppPath = "$RepoDir/src/Test/app.json"
-        Update-AppJsonVersion $testAppPath
-
-        # Test app dependency versiyonunu güncelle
-  
-        Update-TestAppDependencyVersion `
-            -AppJsonPath $testAppPath `
-            -mainAppId "ab48383d-1c96-45ad-99cb-4181188821f9" `
-            -mainAppPublisher "pargesoft" `
-            -mainAppName "Saint-gobain" `
-            -mainAppVersion $mainAppVersion
+        $mainAppPath = Join-Path $RepoDir "app.json"
+        Update-AppJsonVersion $mainAppPath

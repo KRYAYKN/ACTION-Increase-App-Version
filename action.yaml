@@ -1,15 +1,26 @@
 name: Increase App Version
-description: Increment the app version in app.json file (single app only).
+
+description: Increment the app version in app.json files (main and test apps).
 
 inputs:
-  Build_StagingDirectory:
-    description: Path to the staging directory where app.json is located.
+  MAIN_APP_PATH:
+    description: Path to the main app folder containing app.json.
     required: true
+  TEST_APP_PATH:
+    description: Path to the test app folder containing app.json.
+    required: true
+  Build_StagingDirectory:
+    description: Path to the build staging directory.
+    required: true
+  IncrementType:
+    description: Version increment type (e.g., patch, minor, major)
+    required: false
+    default: patch
 
 runs:
   using: "composite"
   steps:
-    - name: Increment App Version
+    - name: Increment Main and Test App Versions
       shell: pwsh
       run: |
         function Update-AppJsonVersion {
@@ -35,5 +46,8 @@ runs:
         }
 
         $RepoDir = Get-Location
-        $mainAppPath = Join-Path $RepoDir "app.json"
-        Update-AppJsonVersion $mainAppPath
+        $mainAppJson = Join-Path $RepoDir "${{ inputs.MAIN_APP_PATH }}" | Join-Path -ChildPath "app.json"
+        $testAppJson = Join-Path $RepoDir "${{ inputs.TEST_APP_PATH }}" | Join-Path -ChildPath "app.json"
+
+        Update-AppJsonVersion -AppJsonPath $mainAppJson
+        Update-AppJsonVersion -AppJsonPath $testAppJson
